@@ -1,14 +1,24 @@
 import openai
 import os
 import json
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from starlette.responses import JSONResponse
 import requests
 from bs4 import BeautifulSoup
 
-openai.api_key = "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"
+openai.api_key = "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"
 
 app = FastAPI()
+
+# Set up CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 @app.get("/scrape")
 async def scrape(url: str):
@@ -25,7 +35,8 @@ async def scrape(url: str):
 
 
             emissions_response = calculate_emissions(page_text)
-            return JSONResponse(content={"content": page_text})
+            print(emissions_response)
+            return JSONResponse(content={"content": emissions_response})
         else:
             return HTTPException(status_code=404, detail="Web page not found")
     except Exception as e:
@@ -40,7 +51,7 @@ def calculate_emissions(page_text):
   text = str(page_text)
   # json_string = json.dumps(json_file, indent = 4)
   condition = "I want the answer to be an estimate of the Carbon emissions where we have a singlular number, not a range or anything like that If you MUST give a range, then just give me the middle point of the two bounds."
-  answer = 'Give final output in the form of "Total Emissions for this product is: X kg" X represents the amount of carbon emissions in Kilograms. Do not have the answer in this format: Total Emissions for this product is: x (The specific carbon emissions for shipping and manufacturing would need to be provided by the manufacturer or supplier)'
+  answer = 'Give final output in the form of "Total Emissions for this product is: X kg" X represents the amount of carbon emissions in Kilograms. Do not have the answer in this format: Total Emissions for this product is: x (The specific carbon emissions for shipping and manufacturing would need to be provided by the manufacturer or supplier). The final output when in JSON format should have key total_emissions'
   content = str(asked + " " + delivered + " " + text + " " + condition + " " + answer)
 
   completion = openai.ChatCompletion.create(
@@ -49,7 +60,7 @@ def calculate_emissions(page_text):
           {"role":"user", "content":content}
       ]
   )
-
+# for laptop use 250.31 kg and linen shirt is 1.31 kg
   print(completion.choices[0].message.content)
   return completion.choices[0].message.content
   # print(content)
